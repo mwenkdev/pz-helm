@@ -1,0 +1,41 @@
+replicaCount: 0
+
+image:
+  repository: indifferentbroccoli/projectzomboid-server-docker
+  tag: latest
+  pullPolicy: "" # Kubernetes default (Always for :latest)
+
+# The chart does not create a Secret or PVCs.
+existingSecret: ""
+persistence:
+  serverFilesClaim: ""
+  serverDataClaim: ""
+
+config:
+  SERVER_NAME: pzserver
+  PUID: "1000"
+  PGID: "1000"
+  SERVER_BRANCH: "" # Steam public/stable branch
+  MEMORY_XMX_GB: "4"
+  UPDATE_ON_START: "true"
+  GENERATE_SETTINGS: "false"
+  DEFAULT_PORT: "16261"
+  UDP_PORT: "16262"
+  RCON_PORT: "27015"
+
+service:
+  type: NodePort
+  gamePort: 16261
+  relayPort: 16262
+  gameNodePort: null
+  relayNodePort: null
+
+resources: {}
+nodeSelector: {}
+terminationGracePeriodSeconds: 120
+
+permissions:
+  enabled: true
+  image: busybox:1.37
+  uid: 1000
+  gid: 1000

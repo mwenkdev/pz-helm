@@ -1,0 +1,68 @@
+{{- if gt (int .Values.replicaCount) 1 -}}
+{{- fail "replicaCount must be 0 or 1: multiple servers can corrupt the same world" -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pz-helm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "pz-helm.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ include "pz-helm.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "pz-helm.fullname" . }}
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+{{- if .Values.permissions.enabled }}
+      initContainers:
+        - name: fix-permissions
+          image: {{ .Values.permissions.image | quote }}
+          command: ["sh", "-c", "chown -R {{ .Values.permissions.uid }}:{{ .Values.permissions.gid }} /data /install"]
+          volumeMounts:
+            - name: server-data
+              mountPath: /data
+            - name: server-install
+              mountPath: /install
+{{- end }}
+      containers:
+        - name: pz-server
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+{{- if .Values.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "pz-helm.fullname" . }}-config
+            - secretRef:
+                name: {{ required "existingSecret is required" .Values.existingSecret }}
+          ports:
+            - name: game
+              containerPort: {{ .Values.service.gamePort }}
+              protocol: UDP
+            - name: steam-relay
+              containerPort: {{ .Values.service.relayPort }}
+              protocol: UDP
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: server-install
+              mountPath: /project-zomboid
+            - name: server-data
+              mountPath: /project-zomboid-config
+      volumes:
+        - name: server-data
+          persistentVolumeClaim:
+            claimName: {{ required "persistence.serverDataClaim is required" .Values.persistence.serverDataClaim }}
+        - name: server-install
+          persistentVolumeClaim:
+            claimName: {{ required "persistence.serverFilesClaim is required" .Values.persistence.serverFilesClaim }}

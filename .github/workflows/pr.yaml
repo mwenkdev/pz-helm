@@ -1,0 +1,21 @@
+name: Chart validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: azure/setup-helm@v5.0.1
+        with:
+          version: v3.20.2
+      - run: helm lint . -f ci/values.yaml --strict
+      - run: helm template pz-server . --namespace pz -f ci/values.yaml > /dev/null

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pz-helm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "pz-helm.fullname" . }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "pz-helm.fullname" . }}
+  ports:
+    - name: game
+      port: {{ .Values.service.gamePort }}
+      targetPort: {{ .Values.service.gamePort }}
+      protocol: UDP
+{{- if and (eq .Values.service.type "NodePort") .Values.service.gameNodePort }}
+      nodePort: {{ .Values.service.gameNodePort }}
+{{- end }}
+    - name: steam-relay
+      port: {{ .Values.service.relayPort }}
+      targetPort: {{ .Values.service.relayPort }}
+      protocol: UDP
+{{- if and (eq .Values.service.type "NodePort") .Values.service.relayNodePort }}
+      nodePort: {{ .Values.service.relayNodePort }}
+{{- end }}

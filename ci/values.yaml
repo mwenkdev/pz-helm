@@ -1,0 +1,12 @@
+existingSecret: pz-server-secrets
+persistence:
+  serverFilesClaim: pz-server-install
+  serverDataClaim: pz-server-data
+nodeSelector:
+  kubernetes.io/hostname: moony
+service:
+  type: NodePort
+  gamePort: 16261
+  relayPort: 16262
+  gameNodePort: 30261
+  relayNodePort: 30262
