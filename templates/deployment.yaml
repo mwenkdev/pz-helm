@@ -19,21 +19,14 @@ spec:
     metadata:
       labels:
         app: {{ include "pz-helm.fullname" . }}
+{{- if .Values.mods.enabled }}
+      annotations:
+        checksum/mods: {{ .Values.mods.items | toJson | sha256sum }}
+{{- end }}
     spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
-{{- if .Values.permissions.enabled }}
-      initContainers:
-        - name: fix-permissions
-          image: {{ .Values.permissions.image | quote }}
-          command: ["sh", "-c", "chown -R {{ .Values.permissions.uid }}:{{ .Values.permissions.gid }} /data /install"]
-          volumeMounts:
-            - name: server-data
-              mountPath: /data
-            - name: server-install
-              mountPath: /install
-{{- end }}
       containers:
         - name: pz-server
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
@@ -43,8 +36,27 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "pz-helm.fullname" . }}-config
-            - secretRef:
-                name: {{ required "existingSecret is required" .Values.existingSecret }}
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "existingSecret is required" .Values.existingSecret }}
+                  key: PASSWORD
+            - name: RCONPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: RCON_PASSWORD
+{{- if .Values.mods.enabled }}
+            - name: MOD_MANIFEST
+              value: /server/mods.json
+            - name: STEAM_WEB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: STEAM_WEB_API_KEY
+                  optional: true
+{{- end }}
           ports:
             - name: game
               containerPort: {{ .Values.service.gamePort }}
@@ -55,14 +67,20 @@ spec:
           resources:
 {{ toYaml .Values.resources | indent 12 }}
           volumeMounts:
-            - name: server-install
-              mountPath: /project-zomboid
             - name: server-data
-              mountPath: /project-zomboid-config
+              mountPath: /home/steam/Zomboid
+{{- if .Values.mods.enabled }}
+            - name: mod-manifest
+              mountPath: /server/mods.json
+              subPath: mods.json
+              readOnly: true
+{{- end }}
       volumes:
         - name: server-data
           persistentVolumeClaim:
             claimName: {{ required "persistence.serverDataClaim is required" .Values.persistence.serverDataClaim }}
-        - name: server-install
-          persistentVolumeClaim:
-            claimName: {{ required "persistence.serverFilesClaim is required" .Values.persistence.serverFilesClaim }}
+{{- if .Values.mods.enabled }}
+        - name: mod-manifest
+          configMap:
+            name: {{ include "pz-helm.fullname" . }}-mods
+{{- end }}

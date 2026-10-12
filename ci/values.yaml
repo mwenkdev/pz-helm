@@ -1,7 +1,12 @@
 existingSecret: pz-server-secrets
 persistence:
-  serverFilesClaim: pz-server-install
   serverDataClaim: pz-server-data
+mods:
+  enabled: true
+  items:
+    - workshopId: "123456789"
+      modIds: [ExampleMod]
+      maps: []
 nodeSelector:
   kubernetes.io/hostname: moony
 service:

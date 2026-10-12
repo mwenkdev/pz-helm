@@ -1,27 +1,31 @@
 replicaCount: 0
 
 image:
-  repository: indifferentbroccoli/projectzomboid-server-docker
+  repository: ghcr.io/mwenkdev/project-zomboid-server-docker
   tag: latest
-  pullPolicy: "" # Kubernetes default (Always for :latest)
+  pullPolicy: Always
 
-# The chart does not create a Secret or PVCs.
+# The chart does not create a Secret or PVCs. Check the existing data PVC layout
+# before enabling the server after migrating from the Indifferent Broccoli image.
 existingSecret: ""
 persistence:
-  serverFilesClaim: ""
   serverDataClaim: ""
 
 config:
-  SERVER_NAME: pzserver
-  PUID: "1000"
-  PGID: "1000"
-  SERVER_BRANCH: "" # Steam public/stable branch
-  MEMORY_XMX_GB: "4"
-  UPDATE_ON_START: "true"
-  GENERATE_SETTINGS: "false"
-  DEFAULT_PORT: "16261"
-  UDP_PORT: "16262"
-  RCON_PORT: "27015"
+  SERVERNAME: pzserver
+  MEMORY: 4096m
+  PORT: "16261"
+
+# When enabled, these entries own WorkshopItems, Mods and Map in the live INI.
+# An empty items list deliberately clears the mod list. Prefer stable Workshop IDs;
+# names require a STEAM_WEB_API_KEY in the existing Secret and must match uniquely.
+mods:
+  enabled: false
+  items: []
+  # - workshopId: "123456789"
+  #   name: Friendly label (optional when workshopId is specified)
+  #   modIds: [ExactModId] # required when an item contains multiple mod IDs
+  #   maps: [] # required when an item contains multiple map folders
 
 service:
   type: NodePort
@@ -33,9 +37,3 @@ service:
 resources: {}
 nodeSelector: {}
 terminationGracePeriodSeconds: 120
-
-permissions:
-  enabled: true
-  image: busybox:1.37
-  uid: 1000
-  gid: 1000

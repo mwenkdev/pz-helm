@@ -1,10 +1,10 @@
 # pz-helm
 
 Helm chart for a single Project Zomboid dedicated server using the
-[`indifferentbroccoli/projectzomboid-server-docker`](https://github.com/indifferentbroccoli/projectzomboid-server-docker)
+[`mwenkdev/project-zomboid-server-docker`](https://github.com/mwenkdev/project-zomboid-server-docker)
 image. The chart deploys a Deployment, ConfigMap, and UDP Service. It does not
-create a namespace, Secret, PV, or PVC: provide an existing Secret and two
-existing claims for server files and world/config data.
+create a namespace, Secret, PV, or PVC: provide an existing Secret and a
+claim for world/config data.
 
 ```sh
 helm lint .
@@ -13,14 +13,71 @@ helm template pz-server . --namespace pz -f ci/values.yaml
 
 For the Marauders cluster, the Argo CD Application and cluster-specific values
 live in `k3s-marauders/apps/pz.yaml` and `k3s-marauders/pz/values.yaml`.
-World data stays on a static local PV on `moony`. Preserve existing claim names
+World data stays on a static local PV on `moony`. Preserve the data claim name
 and take a backup before changing the server version or starting the replica.
 
-`config.SERVER_BRANCH: ""` selects Steam's default public (Build 42 stable)
-branch; `unstable` opts into the beta. With `UPDATE_ON_START: "true"`, Steam may
-install a newer stable version at each start, independently of the chart version
-or Docker image tag. Keep `replicaCount: 0` until the game files and world are
-ready for the first start.
+The fork contains the Steam game installation in the image. `FORCEUPDATE` can
+update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
+until the game files and world are ready for the first start.
+The image is built without publishing on PRs and pushes to `main`; publishing a
+GitHub Release tagged `vX.Y.Z` pushes `ghcr.io/mwenkdev/project-zomboid-server-docker:vX.Y.Z`
+and moves `:latest`. Pin `image.tag` to a released version for a reproducible
+deployment rather than relying on the moving default.
+
+## Mod ownership
+
+Set `mods.enabled: true` and list Workshop items under `mods.items`. With this
+enabled, the chart owns exactly `WorkshopItems=`, `Mods=` and `Map=` in the live
+`/home/steam/Zomboid/Server/${SERVERNAME}.ini`. **Do not hand-edit those three
+keys:** they are replaced on each start. Other INI settings and SandboxVars
+remain on the data PVC. `Password=` and `RCONPassword=` are set from the existing
+Secret's `PASSWORD` and `RCON_PASSWORD` keys. An empty `mods.items` clears the
+Workshop/mod lists and sets the map to `Muldraugh, KY`.
+
+```yaml
+mods:
+  enabled: true
+  items:
+    - workshopId: "123456789" # use the real ID from a Workshop URL
+      name: Example label
+      modIds: [ExactModId] # omit only if exactly one is found
+      maps: [ExampleMap]   # omit if none or exactly one is found
+```
+
+Items are processed in listed order; map names are added in that order, with
+`Muldraugh, KY` last. Before the server starts, SteamCMD downloads each item
+and the image reads `mod.info` and `media/maps` in the downloaded content. If an
+item contains multiple mod IDs or maps, choose the appropriate IDs/names
+explicitly; use `maps: []` for a multi-map item that should add no map. Missing
+or ambiguous content fails startup rather than silently dropping a mod. This
+does not generate the spawn-regions Lua file; maintain custom spawn regions on
+the data PVC when a map needs them. Back up the world before changing map mods.
+
+For name-only discovery, use `name: Exact Workshop Title` instead of
+`workshopId` and add `STEAM_WEB_API_KEY` to the existing Secret. The resolver
+requires exactly one case-insensitive exact-title match among the first 100
+Steam Workshop search results; if that fails, pin the Workshop ID. Titles can
+change, so IDs are preferable for ongoing deployments. Changes to the chart's
+mod list roll the pod; ConfigMap updates are applied on the next start.
+
+## Migration from the previous image
+
+This chart used to mount the install PVC at `/project-zomboid` and the data PVC
+at `/project-zomboid-config`. The fork expects the data PVC at
+`/home/steam/Zomboid`; it no longer mounts the install PVC (mounting it would
+hide the game binaries baked into the image). **Inspect the root of the existing
+data claim before increasing `replicaCount`**: it must contain `Server/`,
+`Saves/`, and the other expected Zomboid data directories at its root. If they
+are nested, migrate the directory contents while the server is stopped and
+after taking a backup. Confirm `${SERVERNAME}.ini` and the existing save name
+match `config.SERVERNAME`. The old cluster-specific values still select the old
+image and env format; update those values together with the chart version.
+
+The existing Secret's `ADMIN_PASSWORD` is deliberately not passed as
+`ADMINPASSWORD`: this game logs command-line arguments, including that value.
+An existing admin account in the saved database will continue to work, but a
+fresh world needs a separately verified admin bootstrap procedure before it
+can be started unattended.
 
 ## Releases
 

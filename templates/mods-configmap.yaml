@@ -1,0 +1,11 @@
+{{- if .Values.mods.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pz-helm.fullname" . }}-mods
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "pz-helm.fullname" . }}
+data:
+  mods.json: {{ .Values.mods.items | toJson | quote }}
+{{- end }}
