@@ -11,10 +11,9 @@ helm lint .
 helm template pz-server . --namespace pz -f ci/values.yaml
 ```
 
-For the Marauders cluster, the Argo CD Application and cluster-specific values
-live in `k3s-marauders/apps/pz.yaml` and `k3s-marauders/pz/values.yaml`.
-World data stays on a static local PV on `moony`. Preserve the data claim name
-and take a backup before changing the server version or starting the replica.
+Provide a data claim containing the server's world and configuration. Preserve
+the claim name and take a backup before changing the server version or starting
+the replica.
 
 The fork contains the Steam game installation in the image. `FORCEUPDATE` can
 update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
@@ -70,8 +69,8 @@ data claim before increasing `replicaCount`**: it must contain `Server/`,
 `Saves/`, and the other expected Zomboid data directories at its root. If they
 are nested, migrate the directory contents while the server is stopped and
 after taking a backup. Confirm `${SERVERNAME}.ini` and the existing save name
-match `config.SERVERNAME`. The old cluster-specific values still select the old
-image and env format; update those values together with the chart version.
+match `config.SERVERNAME`. When upgrading from an older chart release, update
+your values to select the forked image and its environment variable names.
 
 The existing Secret's `ADMIN_PASSWORD` is deliberately not passed as
 `ADMINPASSWORD`: this game logs command-line arguments, including that value.
@@ -96,6 +95,5 @@ to delete the new GHCR version; registry writes and cleanup cannot be atomic.
 It leaves a Release intact if its OCI version already exists (including a
 rerun of a successful release). GitHub Actions uses `GITHUB_TOKEN` with package
 write permission and package admin access for cleanup. Set the GHCR package
-visibility to public after its first publication for unauthenticated Argo CD
-pulls. Pin a published chart version in the GitOps Application; do not point
-it at a version that has not been published yet.
+visibility to public after its first publication for unauthenticated pulls.
+Pin a published chart version in your deployment configuration.

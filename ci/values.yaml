@@ -7,8 +7,6 @@ mods:
     - workshopId: "123456789"
       modIds: [ExampleMod]
       maps: []
-nodeSelector:
-  kubernetes.io/hostname: moony
 service:
   type: NodePort
   gamePort: 16261
