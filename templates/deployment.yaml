@@ -37,6 +37,18 @@ spec:
             - configMapRef:
                 name: {{ include "pz-helm.fullname" . }}-config
           env:
+            - name: ADMINUSERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "existingSecret is required" .Values.existingSecret }}
+                  key: ADMIN_USERNAME
+                  optional: true
+            - name: ADMIN_BOOTSTRAP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: ADMIN_PASSWORD
+                  optional: true
             - name: PASSWORD
               valueFrom:
                 secretKeyRef:

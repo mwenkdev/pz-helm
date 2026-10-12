@@ -20,7 +20,7 @@ update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
 until the game files and world are ready for the first start.
 The image is built without publishing on PRs and pushes to `main`; publishing a
 GitHub Release tagged `vX.Y.Z` pushes `ghcr.io/mwenkdev/project-zomboid-server-docker:vX.Y.Z`
-and moves `:latest`. The chart defaults to the tested `:v0.1.0` release;
+and moves `:latest`. The chart defaults to the bootstrap-enabled `:v0.1.1` release;
 pin `image.tag` to a released version when upgrading the server image.
 
 ## Mod ownership
@@ -72,11 +72,13 @@ after taking a backup. Confirm `${SERVERNAME}.ini` and the existing save name
 match `config.SERVERNAME`. When upgrading from an older chart release, update
 your values to select the forked image and its environment variable names.
 
-The existing Secret's `ADMIN_PASSWORD` is deliberately not passed as
-`ADMINPASSWORD`: this game logs command-line arguments, including that value.
-An existing admin account in the saved database will continue to work, but a
-fresh world needs a separately verified admin bootstrap procedure before it
-can be started unattended.
+The existing Secret's `ADMIN_PASSWORD` is supplied as
+`ADMIN_BOOTSTRAP_PASSWORD`, never as the logged `-adminpassword` argument. On
+the first start the image feeds the password and confirmation to the game's
+stdin prompt. It checks the admin account in the server database before each
+start and does not send the password to the game console after that account
+exists. Changing the Secret later does not rotate the existing admin account's
+password. `ADMIN_USERNAME` is optional; the game defaults to `admin`.
 
 ## Releases
 
