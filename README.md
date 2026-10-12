@@ -20,8 +20,8 @@ update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
 until the game files and world are ready for the first start.
 The image is built without publishing on PRs and pushes to `main`; publishing a
 GitHub Release tagged `vX.Y.Z` pushes `ghcr.io/mwenkdev/project-zomboid-server-docker:vX.Y.Z`
-and moves `:latest`. Pin `image.tag` to a released version for a reproducible
-deployment rather than relying on the moving default.
+and moves `:latest`. The chart defaults to the tested `:v0.1.0` release;
+pin `image.tag` to a released version when upgrading the server image.
 
 ## Mod ownership
 
