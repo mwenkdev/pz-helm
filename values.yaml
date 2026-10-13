@@ -2,7 +2,7 @@ replicaCount: 0
 
 image:
   repository: ghcr.io/mwenkdev/project-zomboid-server-docker
-  tag: v0.1.1
+  tag: v0.1.3
   pullPolicy: Always
 
 # The chart does not create a Secret or PVCs. Check the existing data PVC layout
@@ -10,6 +10,7 @@ image:
 existingSecret: ""
 persistence:
   serverDataClaim: ""
+  workshopCacheClaim: "" # Optional separate PVC for Steam Workshop downloads
 
 config:
   SERVERNAME: pzserver
@@ -21,6 +22,7 @@ config:
 # names require a STEAM_WEB_API_KEY in the existing Secret and must match uniquely.
 mods:
   enabled: false
+  updateOnStart: true # false skips SteamCMD checks for cached items; missing items still download
   items: []
   # - workshopId: "123456789"
   #   name: Friendly label (optional when workshopId is specified)

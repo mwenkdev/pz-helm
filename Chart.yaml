@@ -2,4 +2,4 @@ apiVersion: v2
 name: pz-helm
 description: Single-instance Project Zomboid dedicated server with externally managed storage
 type: application
-version: 0.3.0
+version: 0.4.0

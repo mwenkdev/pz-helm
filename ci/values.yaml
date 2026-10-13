@@ -1,6 +1,7 @@
 existingSecret: pz-server-secrets
 persistence:
   serverDataClaim: pz-server-data
+  workshopCacheClaim: pz-server-workshop-cache
 mods:
   enabled: true
   items:

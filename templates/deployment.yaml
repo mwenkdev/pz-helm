@@ -62,6 +62,8 @@ spec:
 {{- if .Values.mods.enabled }}
             - name: MOD_MANIFEST
               value: /server/mods.json
+            - name: MOD_UPDATE_ON_START
+              value: {{ .Values.mods.updateOnStart | toString | quote }}
             - name: STEAM_WEB_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -86,6 +88,10 @@ spec:
               mountPath: /server/mods.json
               subPath: mods.json
               readOnly: true
+{{- if .Values.persistence.workshopCacheClaim }}
+            - name: workshop-cache
+              mountPath: /home/steam/pz-dedicated/steamapps/workshop
+{{- end }}
 {{- end }}
       volumes:
         - name: server-data
@@ -95,4 +101,9 @@ spec:
         - name: mod-manifest
           configMap:
             name: {{ include "pz-helm.fullname" . }}-mods
+{{- if .Values.persistence.workshopCacheClaim }}
+        - name: workshop-cache
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.workshopCacheClaim | quote }}
+{{- end }}
 {{- end }}

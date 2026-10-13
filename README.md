@@ -20,7 +20,7 @@ update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
 until the game files and world are ready for the first start.
 The image is built without publishing on PRs and pushes to `main`; publishing a
 GitHub Release tagged `vX.Y.Z` pushes `ghcr.io/mwenkdev/project-zomboid-server-docker:vX.Y.Z`
-and moves `:latest`. The chart defaults to the bootstrap-enabled `:v0.1.1` release;
+and moves `:latest`. The chart defaults to `:v0.1.3`;
 pin `image.tag` to a released version when upgrading the server image.
 
 ## Mod ownership
@@ -58,6 +58,18 @@ requires exactly one case-insensitive exact-title match among the first 100
 Steam Workshop search results; if that fails, pin the Workshop ID. Titles can
 change, so IDs are preferable for ongoing deployments. Changes to the chart's
 mod list roll the pod; ConfigMap updates are applied on the next start.
+
+`mods.updateOnStart` defaults to `true`: the image checks all selected items
+with one SteamCMD login before starting. With `false`, it checks only items
+missing from the local Workshop cache. In either mode, the game may query and
+update Workshop items itself; this setting does **not** pin mod versions.
+
+Set `persistence.workshopCacheClaim` to an existing PVC to retain downloads
+across pod replacements. The chart mounts it at
+`/home/steam/pz-dedicated/steamapps/workshop`; keeping it separate from the
+world PVC lets you reset the world without downloading all mods again. The
+chart does not create that PVC. Without a cache claim, the two update modes
+still work, but a replacement pod has no cached Workshop items to reuse.
 
 ## Migration from the previous image
 
