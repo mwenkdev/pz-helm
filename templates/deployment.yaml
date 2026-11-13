@@ -59,6 +59,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.existingSecret }}
                   key: RCON_PASSWORD
+            - name: MOD_FIX_CASE
+              value: {{ ternary "false" "true" (eq (toString .Values.mods.fixCase) "false") | quote }}
 {{- if .Values.mods.enabled }}
             - name: MOD_MANIFEST
               value: /server/mods.json

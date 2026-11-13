@@ -2,7 +2,7 @@ replicaCount: 0
 
 image:
   repository: ghcr.io/mwenkdev/project-zomboid-server-docker
-  tag: v0.1.3
+  tag: v0.1.6
   pullPolicy: Always
 
 # The chart does not create a Secret or PVCs. Check the existing data PVC layout
@@ -23,6 +23,7 @@ config:
 mods:
   enabled: false
   updateOnStart: true # false skips SteamCMD checks for cached items; missing items still download
+  fixCase: true # lowercase symlink aliases for mixed-case Workshop files; applies even when mods.enabled is false
   items: []
   # - workshopId: "123456789"
   #   name: Friendly label (optional when workshopId is specified)

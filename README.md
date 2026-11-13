@@ -20,7 +20,7 @@ update it at startup, but is not enabled by this chart. Keep `replicaCount: 0`
 until the game files and world are ready for the first start.
 The image is built without publishing on PRs and pushes to `main`; publishing a
 GitHub Release tagged `vX.Y.Z` pushes `ghcr.io/mwenkdev/project-zomboid-server-docker:vX.Y.Z`
-and moves `:latest`. The chart defaults to `:v0.1.3`;
+and moves `:latest`. The chart defaults to `:v0.1.6`;
 pin `image.tag` to a released version when upgrading the server image.
 
 ## Mod ownership
@@ -63,6 +63,21 @@ mod list roll the pod; ConfigMap updates are applied on the next start.
 with one SteamCMD login before starting. With `false`, it checks only items
 missing from the local Workshop cache. In either mode, the game may query and
 update Workshop items itself; this setting does **not** pin mod versions.
+
+`mods.fixCase` defaults to `true` and is passed to the image as `MOD_FIX_CASE`.
+Some Workshop mods reference their files with a different capitalization than
+they ship (Tsar's Common Library asks for `media/animsets` but ships
+`media/AnimSets`), which fails on Linux. On every start, after SteamCMD is done
+and before the game launches, the image adds lowercase symlink aliases
+(`animsets -> AnimSets`) to the Workshop cache. It also does this when
+`updateOnStart` is `false`. Original files are never changed, existing entries
+are never replaced, and aliases that a mod update removed are recreated. The
+contents of `media/lua`, `media/scripts` and `media/maps` are skipped so the
+game never sees duplicate Lua files, scripts or maps. The pod log lists the
+aliases created per Workshop item and any collisions. Set `mods.fixCase: false`
+to disable it. Unlike the other `mods.*` settings, this one also applies when
+`mods.enabled` is `false`. Images older than the release that adds
+`MOD_FIX_CASE` ignore it.
 
 Set `persistence.workshopCacheClaim` to an existing PVC to retain downloads
 across pod replacements. The chart mounts it at
